@@ -1,0 +1,18 @@
+[project]
+name = "agent-work-multi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "groq>=0.31.0",
+    "langchain>=0.3.27",
+    "langchain-community>=0.3.27",
+    "langchain-google-genai>=2.1.9",
+    "langchain-groq>=0.3.7",
+    "langchain-openai>=0.3.30",
+    "openai>=1.100.2",
+    "pydantic>=2.11.7",
+    "python-dotenv>=1.1.1",
+    "streamlit>=1.48.1",
+]
