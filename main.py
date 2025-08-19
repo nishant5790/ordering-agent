@@ -82,6 +82,27 @@ st.markdown("""
         background-color: #dc3545;
         color: white;
     }
+    .final-output {
+        background-color: #1e1e1e;
+        border: 2px solid #00ff00;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin: 1rem 0;
+        font-family: 'Courier New', monospace;
+    }
+    .final-output h4 {
+        color: #00ff00;
+        margin-bottom: 0.5rem;
+    }
+    .json-display {
+        background-color: #2d2d2d;
+        border: 1px solid #555;
+        border-radius: 0.3rem;
+        padding: 1rem;
+        font-family: 'Courier New', monospace;
+        white-space: pre-wrap;
+        overflow-x: auto;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -102,6 +123,9 @@ def initialize_session_state():
     
     if 'llm_provider' not in st.session_state:
         st.session_state.llm_provider = config.DEFAULT_LLM_PROVIDER
+    
+    if 'final_outputs' not in st.session_state:
+        st.session_state.final_outputs = []
 
 def display_chat_message(message, is_user=False, agent_name=None):
     """Display a chat message with proper styling"""
@@ -159,6 +183,44 @@ def display_order_summary(order_data):
         st.write(f"**Brand/Supplier:** {order_data.get('brand_preference', 'None')}")
         st.write(f"**Type:** {order_data.get('order_type', 'N/A')}")
 
+def display_final_outputs():
+    """Display all final outputs in the specified JSON format"""
+    if not st.session_state.final_outputs:
+        return
+    
+    st.markdown("""
+    <div class="final-output">
+        <h4>📋 Final Outputs (JSON Format)</h4>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    for i, output in enumerate(st.session_state.final_outputs, 1):
+        with st.expander(f"Order {i}: {output.get('title', 'Untitled')}", expanded=False):
+            st.markdown("""
+            <div class="json-display">
+            """, unsafe_allow_html=True)
+            
+            # Format the output exactly as specified
+            formatted_output = {
+                "title": output.get("title", ""),
+                "description": output.get("description", ""),
+                "product_name": output.get("product_name", ""),
+                "quantity": output.get("quantity", 0),
+                "brand_preference": output.get("brand_preference", "")
+            }
+            
+            st.json(formatted_output)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            # Show additional details
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write(f"**Order Type:** {output.get('order_type', 'N/A')}")
+                st.write(f"**Created:** {output.get('created_at', 'N/A')}")
+            with col2:
+                st.write(f"**Session ID:** {output.get('session_id', 'N/A')[:8]}...")
+
 def display_llm_status(llm_info):
     """Display LLM provider status"""
     if llm_info['available']:
@@ -176,6 +238,20 @@ def display_llm_status(llm_info):
         {status_text}
     </div>
     """, unsafe_allow_html=True)
+
+def extract_final_output_from_message(message):
+    """Extract final output JSON from bot message"""
+    if "📋 **Final Output:**" in message:
+        try:
+            # Find the JSON content between ```json and ```
+            start = message.find("```json") + 7
+            end = message.find("```", start)
+            if start > 6 and end > start:
+                json_str = message[start:end].strip()
+                return json.loads(json_str)
+        except Exception as e:
+            print(f"Error extracting JSON: {e}")
+    return None
 
 def main():
     """Main application function"""
@@ -254,10 +330,12 @@ def main():
                 )
                 st.session_state.session_id = st.session_state.agent_manager.session_id
                 st.session_state.chat_history = []
+                st.session_state.final_outputs = []
                 st.rerun()
             
             if st.button("🗑️ Clear Chat"):
                 st.session_state.chat_history = []
+                st.session_state.final_outputs = []
                 st.rerun()
         
         # LangChain Configuration
@@ -280,6 +358,19 @@ def main():
                 is_user=message['is_user'],
                 agent_name=message.get('agent_name')
             )
+            
+            # Check if this message contains a final output
+            if not message['is_user']:
+                final_output = extract_final_output_from_message(message['content'])
+                if final_output:
+                    # Add to final outputs if not already present
+                    output_exists = any(
+                        existing.get('title') == final_output.get('title') and 
+                        existing.get('description') == final_output.get('description')
+                        for existing in st.session_state.final_outputs
+                    )
+                    if not output_exists:
+                        st.session_state.final_outputs.append(final_output)
         
         # Chat input
         user_input = st.chat_input("Type your message here...")
@@ -335,6 +426,11 @@ def main():
         else:
             st.info("No active order. Start by providing an order title!")
         
+        # Final Outputs Section
+        if st.session_state.final_outputs:
+            st.subheader("📋 Final Outputs")
+            display_final_outputs()
+        
         # Recent orders for this session
         st.subheader("📦 Session Orders")
         try:
@@ -367,6 +463,7 @@ def main():
         <p>Multi-Agent Order Chatbot System | Built with Streamlit, LangChain & Python</p>
         <p>🤖 Orchestrator Agent | 📦 Generic Order Agent | 📊 Bulk Order Agent</p>
         <p>🔗 Powered by LangChain Framework</p>
+        <p>📋 Final Output Format: JSON with title, description, product_name, quantity, brand_preference</p>
     </div>
     """, unsafe_allow_html=True)
 

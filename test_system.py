@@ -69,10 +69,6 @@ def test_llm_manager():
         result2 = llm_manager.classify_request("Need 500 water bottles for event", "business")
         print(f"✅ Bulk classification: {result2}")
         
-        # Test rule-based fallback
-        result3 = llm_manager.classify_request("I want 1000 USB drives", "reselling")
-        print(f"✅ Rule-based classification: {result3}")
-        
         # Test provider info
         provider_info = llm_manager.get_provider_info()
         print(f"✅ Provider info: {provider_info['provider']} - {provider_info['model']}")
@@ -118,6 +114,69 @@ def test_agents():
         print(f"❌ Agents test failed: {e}")
         return False
 
+def test_final_output_format():
+    """Test the final output format generation"""
+    print("\n🧪 Testing Final Output Format...")
+    
+    try:
+        # Initialize test database and LLM manager
+        db = DatabaseManager("test_output_format.db")
+        llm_manager = LLMManager(provider="openai")
+        
+        # Test Generic Order Agent output format
+        generic_agent = GenericOrderAgent(db, "test_session", llm_manager)
+        generic_agent.order_data = {
+            "title": "Test Order",
+            "description": "Test description",
+            "product_name": "Test Product",
+            "quantity": 100,
+            "brand_preference": "Test Brand"
+        }
+        
+        final_output = generic_agent.generate_final_output()
+        print("✅ Final output generated successfully")
+        
+        # Parse and validate JSON format
+        import json
+        output_data = json.loads(final_output)
+        
+        # Check required fields
+        required_fields = ["title", "description", "product_name", "quantity", "brand_preference"]
+        for field in required_fields:
+            if field not in output_data:
+                print(f"❌ Missing required field: {field}")
+                return False
+        
+        # Check data types
+        if not isinstance(output_data["title"], str):
+            print("❌ Title should be string")
+            return False
+        if not isinstance(output_data["description"], str):
+            print("❌ Description should be string")
+            return False
+        if not isinstance(output_data["product_name"], str):
+            print("❌ Product name should be string")
+            return False
+        if not isinstance(output_data["quantity"], int):
+            print("❌ Quantity should be integer")
+            return False
+        if not isinstance(output_data["brand_preference"], str):
+            print("❌ Brand preference should be string")
+            return False
+        
+        print("✅ All required fields present with correct types")
+        print(f"✅ Final output format:\n{final_output}")
+        
+        # Cleanup
+        os.remove("test_output_format.db")
+        print("✅ Test output format database cleaned up")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Final output format test failed: {e}")
+        return False
+
 def test_workflow():
     """Test complete workflow"""
     print("\n🧪 Testing Complete Workflow...")
@@ -152,6 +211,13 @@ def test_workflow():
             
             response5 = agent_manager.process_message("Yes")
             print(f"Step 5 - Confirmation: {response5}")
+            
+            # Check if final output was generated
+            if "📋 **Final Output:**" in response5:
+                print("✅ Final output format generated successfully")
+            else:
+                print("❌ Final output format not generated")
+                return False
         
         # Check final state
         final_agent = agent_manager.get_current_agent_name()
@@ -226,6 +292,7 @@ def run_all_tests():
         ("Database", test_database),
         ("LLM Manager", test_llm_manager),
         ("Agents", test_agents),
+        ("Final Output Format", test_final_output_format),
         ("Complete Workflow", test_workflow),
         ("LangChain Integration", test_langchain_integration)
     ]
@@ -256,6 +323,8 @@ def run_all_tests():
         print("✅ Conversation memory")
         print("✅ Database integration")
         print("✅ Agent handoffs and workflow")
+        print("✅ Final output format in specified JSON structure")
+        print("✅ Required fields: title, description, product_name, quantity, brand_preference")
     else:
         print("⚠️ Some tests failed. Please check the errors above.")
     

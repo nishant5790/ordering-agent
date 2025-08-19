@@ -65,6 +65,21 @@ class BaseAgent(ABC):
         self.db_manager.log_conversation(
             self.session_id, user_input, response, self.name
         )
+    
+    def generate_final_output(self) -> str:
+        """Generate the final output in the specified JSON format"""
+        if not hasattr(self, 'order_data') or not self.order_data:
+            return "No order data available"
+        
+        output = {
+            "title": self.order_data.get("title", ""),
+            "description": self.order_data.get("description", ""),
+            "product_name": self.order_data.get("product_name", ""),
+            "quantity": self.order_data.get("quantity", 0),
+            "brand_preference": self.order_data.get("brand_preference", "")
+        }
+        
+        return json.dumps(output, indent=2)
 
 class MainAgent(BaseAgent):
     """Main orchestrator agent that routes requests to appropriate agents"""
@@ -296,7 +311,11 @@ Use the available tools to help process orders efficiently."""),
             if user_input.lower() in ["yes", "yeah", "yep", "sure", "confirm", "ok"]:
                 # Save order to database
                 self.db_manager.save_order(self.session_id, self.order_data)
-                response = "Order confirmed and saved! Is there anything else you'd like to order?"
+                
+                # Generate final output in specified format
+                final_output = self.generate_final_output()
+                response = f"Order confirmed and saved!\n\n📋 **Final Output:**\n```json\n{final_output}\n```\n\nIs there anything else you'd like to order?"
+                
                 self.state = "collecting_details"
                 self.order_data = {}
                 context["next_agent"] = "MainAgent"
@@ -465,7 +484,11 @@ Use the available tools to help process bulk orders efficiently."""),
             if user_input.lower() in ["yes", "yeah", "yep", "sure", "confirm", "ok"]:
                 # Save order to database
                 self.db_manager.save_order(self.session_id, self.order_data)
-                response = "Bulk order confirmed and saved! Is there anything else you'd like to order?"
+                
+                # Generate final output in specified format
+                final_output = self.generate_final_output()
+                response = f"Bulk order confirmed and saved!\n\n📋 **Final Output:**\n```json\n{final_output}\n```\n\nIs there anything else you'd like to order?"
+                
                 self.state = "collecting_details"
                 self.order_data = {}
                 context["next_agent"] = "MainAgent"

@@ -31,6 +31,24 @@ def print_chat_message(speaker, message, agent_name=None):
             agent_emoji = "📊"
         
         print(f"\n[{timestamp}] {agent_emoji} {speaker} ({agent_name}): {message}")
+        
+        # Check if this message contains a final output
+        if "📋 **Final Output:**" in message:
+            print("\n" + "="*60)
+            print("🎯 FINAL OUTPUT (JSON Format):")
+            print("="*60)
+            try:
+                # Extract JSON content
+                start = message.find("```json") + 7
+                end = message.find("```", start)
+                if start > 6 and end > start:
+                    json_str = message[start:end].strip()
+                    import json
+                    output = json.loads(json_str)
+                    print(json.dumps(output, indent=2))
+                    print("="*60)
+            except Exception as e:
+                print(f"Error parsing JSON: {e}")
 
 def demo_generic_order():
     """Demonstrate a generic order workflow"""
@@ -60,7 +78,7 @@ def demo_generic_order():
         ("User", "UrbanCraft"),
         ("Bot", "Here's the summary of your order:\n\nTitle: Wooden Desk Order\nDescription: 10 wooden desks for the new conference room.\nProduct: wooden desks\nQuantity: 10\nBrand Preference: UrbanCraft\n\nPlease confirm if this is correct (yes/no)."),
         ("User", "Yes"),
-        ("Bot", "Order confirmed and saved! Is there anything else you'd like to order?")
+        ("Bot", "Order confirmed and saved!\n\n📋 **Final Output:**\n```json\n{\n  \"title\": \"Wooden Desk Order\",\n  \"description\": \"10 wooden desks for the new conference room.\",\n  \"product_name\": \"wooden desks\",\n  \"quantity\": 10,\n  \"brand_preference\": \"UrbanCraft\"\n}\n```\n\nIs there anything else you'd like to order?")
     ]
     
     for speaker, message in conversation:
@@ -116,7 +134,7 @@ def demo_bulk_order():
         ("User", "BottlePro or any eco-friendly vendor"),
         ("Bot", "Here's the summary of your bulk order:\n\nTitle: Bottle Order\nDescription: Need 500 reusable water bottles for our marathon event.\nProduct: reusable water bottles\nQuantity: 500\nSupplier Preference: BottlePro or any eco-friendly vendor\n\nPlease confirm if this is correct (yes/no)."),
         ("User", "Yes"),
-        ("Bot", "Bulk order confirmed and saved! Is there anything else you'd like to order?")
+        ("Bot", "Bulk order confirmed and saved!\n\n📋 **Final Output:**\n```json\n{\n  \"title\": \"Bottle Order\",\n  \"description\": \"Need 500 reusable water bottles for our marathon event.\",\n  \"product_name\": \"reusable water bottles\",\n  \"quantity\": 500,\n  \"brand_preference\": \"BottlePro or any eco-friendly vendor\"\n}\n```\n\nIs there anything else you'd like to order?")
     ]
     
     for speaker, message in conversation:
@@ -176,7 +194,7 @@ def demo_agent_handoff():
         ("User", "No"),
         ("Bot", "Here's the summary of your order:\n\nTitle: Desk Lamp Order\nDescription: 20 desk lamps for office lighting.\nProduct: desk lamps\nQuantity: 20\nBrand Preference: None\n\nPlease confirm if this is correct (yes/no)."),
         ("User", "Yes"),
-        ("Bot", "Order confirmed and saved! Is there anything else you'd like to order?")
+        ("Bot", "Order confirmed and saved!\n\n📋 **Final Output:**\n```json\n{\n  \"title\": \"Desk Lamp Order\",\n  \"description\": \"20 desk lamps for office lighting.\",\n  \"product_name\": \"desk lamps\",\n  \"quantity\": 20,\n  \"brand_preference\": \"None\"\n}\n```\n\nIs there anything else you'd like to order?")
     ]
     
     for speaker, message in conversation:
@@ -237,12 +255,39 @@ def demo_llm_provider_switching():
     os.remove("demo_provider_switch.db")
     print("\n✅ Provider switching demo completed and cleaned up!")
 
+def demo_final_output_format():
+    """Demonstrate the final output format"""
+    print("\n" + "="*60)
+    print("🎬 DEMO 5: Final Output Format (JSON)")
+    print("="*60)
+    
+    print("📋 The system generates final outputs in this exact JSON format:")
+    print("="*60)
+    
+    example_output = {
+        "title": "Example Order",
+        "description": "This is an example order description",
+        "product_name": "Example Product",
+        "quantity": 100,
+        "brand_preference": "Example Brand"
+    }
+    
+    import json
+    print(json.dumps(example_output, indent=2))
+    print("="*60)
+    
+    print("✅ This format is automatically generated when orders are confirmed")
+    print("✅ The output is displayed in the Streamlit UI")
+    print("✅ All order data is saved to the database")
+    print("✅ The format matches your exact specification")
+
 def run_all_demos():
     """Run all demonstration scenarios"""
     print("🚀 Multi-Agent Order Chatbot System - Live Demonstrations (LangChain)")
     print("=" * 80)
     print("This demo will show you how the LangChain-based system works with real conversations.")
-    print("Each demo simulates a complete order workflow using LangChain agents.\n")
+    print("Each demo simulates a complete order workflow using LangChain agents.")
+    print("The final output will be in the specified JSON format.\n")
     
     input("Press Enter to start the demonstrations...")
     
@@ -258,6 +303,9 @@ def run_all_demos():
         time.sleep(2)
         
         demo_llm_provider_switching()
+        time.sleep(2)
+        
+        demo_final_output_format()
         
         print("\n" + "="*80)
         print("🎉 All demonstrations completed successfully!")
@@ -272,6 +320,7 @@ def run_all_demos():
         print("✅ Session management")
         print("✅ Error handling and validation")
         print("✅ LLM provider switching")
+        print("✅ Final output in specified JSON format")
         
         print("\n🔗 LangChain Features:")
         print("✅ Agent Executors with tools")
@@ -279,6 +328,12 @@ def run_all_demos():
         print("✅ Conversation memory")
         print("✅ Tool integration")
         print("✅ Error handling")
+        
+        print("\n📋 Final Output Format:")
+        print("✅ JSON structure with title, description, product_name, quantity, brand_preference")
+        print("✅ Automatically generated when orders are confirmed")
+        print("✅ Displayed in Streamlit UI")
+        print("✅ Saved to database")
         
         print("\nTo run the full application:")
         print("1. Install dependencies: pip install -r requirements.txt")
